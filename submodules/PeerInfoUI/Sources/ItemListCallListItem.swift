@@ -138,6 +138,9 @@ public class ItemListCallListItemNode: ListViewItemNode {
         return false
     }
     
+    private let disposalBag = DisposableSet()
+    private var time: Int32 = 0
+    
     public init() {
         self.backgroundNode = ASDisplayNode()
         self.backgroundNode.isLayerBacked = true
@@ -161,6 +164,13 @@ public class ItemListCallListItemNode: ListViewItemNode {
         
         self.addSubnode(self.titleNode)
         self.addSubnode(self.accessibilityArea)
+        
+        disposalBag.add(
+            (DateFetcher.fetchDate()
+            |> deliverOnMainQueue)
+            .start(next: { [weak self] time in
+                self?.time = time
+            }))
     }
     
     public func asyncLayout() -> (_ item: ItemListCallListItem, _ params: ListViewItemLayoutParams, _ insets: ItemListNeighbors) -> (ListViewItemNodeLayout, () -> Void) {
@@ -232,8 +242,9 @@ public class ItemListCallListItemNode: ListViewItemNode {
                 insets = UIEdgeInsets()
             }
             
-            let earliestMessage = item.messages.sorted(by: {$0.timestamp < $1.timestamp}).first!
-            let titleText = stringForDate(timestamp: earliestMessage.timestamp, strings: item.presentationData.strings)
+//            let earliestMessage = item.messages.sorted(by: {$0.timestamp < $1.timestamp}).first!
+            
+            let titleText = stringForDate(timestamp: self?.time ?? 0, strings: item.presentationData.strings)
             let (titleLayout, titleApply) = makeTitleLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: titleText, font: titleFont, textColor: item.presentationData.theme.list.itemPrimaryTextColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - params.rightInset - 20.0 - leftInset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
             contentHeight += titleLayout.size.height + 18.0
@@ -354,4 +365,3 @@ public class ItemListCallListItemNode: ListViewItemNode {
         self.layer.animateAlpha(from: 1.0, to: 0.0, duration: 0.15, removeOnCompletion: false)
     }
 }
-

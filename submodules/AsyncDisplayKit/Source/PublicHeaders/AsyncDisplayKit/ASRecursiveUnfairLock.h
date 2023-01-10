@@ -10,6 +10,7 @@
 #import <UIKit/UIKit.h>
 #import <AsyncDisplayKit/ASBaseDefines.h>
 #import <pthread/pthread.h>
+#import <os/lock.h>
 
 #if defined(__aarch64__)
     #define AS_USE_OS_LOCK true
@@ -18,8 +19,6 @@
 #endif
 
 #if AS_USE_OS_LOCK
-
-#import <os/lock.h>
 
 // Note: We don't use ATOMIC_VAR_INIT here because C++ compilers don't like it,
 // and it literally does absolutely nothing.
@@ -67,7 +66,7 @@ NS_ASSUME_NONNULL_END
 NS_ASSUME_NONNULL_BEGIN
 
 typedef struct {
-  OSSpinLock _lock;
+  os_unfair_lock _lock;
   _Atomic(pthread_t) _thread;  // Write-protected by lock
   int _count;                  // Protected by lock
 } ASRecursiveUnfairLock;

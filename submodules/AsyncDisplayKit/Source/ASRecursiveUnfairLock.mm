@@ -46,14 +46,14 @@ void ASRecursiveUnfairLockLock(ASRecursiveUnfairLock *l)
   }
 #else
     const pthread_t s = pthread_self();
-    if (OSSpinLockTry(&l->_lock)) {
+    if (os_unfair_lock_trylock(&l->_lock)) {
         // Owned by nobody. We now have the lock. Assign self.
         rul_set_thread(l, s);
     } else if (rul_get_thread(l) == s) {
         // Owned by self (recursive lock). nop.
     } else {
         // Owned by other thread. Block and then set thread to self.
-        OSSpinLockLock(&l->_lock);
+        os_unfair_lock_lock(&l->_lock);
         rul_set_thread(l, s);
     }
 #endif
@@ -78,7 +78,7 @@ BOOL ASRecursiveUnfairLockTryLock(ASRecursiveUnfairLock *l)
   }
 #else
     const pthread_t s = pthread_self();
-    if (OSSpinLockTry(&l->_lock)) {
+    if (os_unfair_lock_trylock(&l->_lock)) {
       // Owned by nobody. We now have the lock. Assign self.
       rul_set_thread(l, s);
     } else if (rul_get_thread(l) == s) {
@@ -105,10 +105,6 @@ void ASRecursiveUnfairLockUnlock(ASRecursiveUnfairLock *l)
     // try to re-lock, and fail the -tryLock, and read _thread, then we'll mistakenly
     // think that we still own the lock and proceed without blocking.
     rul_set_thread(l, NULL);
-#if AS_USE_OS_LOCK
     os_unfair_lock_unlock(&l->_lock);
-#else
-    OSSpinLockUnlock(&l->_lock);
-#endif
   }
 }
