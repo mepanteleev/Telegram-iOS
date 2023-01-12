@@ -17,14 +17,16 @@ public class ItemListCallListItem: ListViewItem, ItemListItem {
     public let sectionId: ItemListSectionId
     let style: ItemListStyle
     let displayDecorations: Bool
+    let currentDate: Int32
     
-    public init(presentationData: ItemListPresentationData, dateTimeFormat: PresentationDateTimeFormat, messages: [Message], sectionId: ItemListSectionId, style: ItemListStyle, displayDecorations: Bool = true) {
+    public init(presentationData: ItemListPresentationData, dateTimeFormat: PresentationDateTimeFormat, messages: [Message], sectionId: ItemListSectionId, style: ItemListStyle, displayDecorations: Bool = true, currentDate: Int32) {
         self.presentationData = presentationData
         self.dateTimeFormat = dateTimeFormat
         self.messages = messages
         self.sectionId = sectionId
         self.style = style
         self.displayDecorations = displayDecorations
+        self.currentDate = currentDate
     }
     
     public func nodeConfiguredForParams(async: @escaping (@escaping () -> Void) -> Void, params: ListViewItemLayoutParams, synchronousLoads: Bool, previousItem: ListViewItem?, nextItem: ListViewItem?, completion: @escaping (ListViewItemNode, @escaping () -> (Signal<Void, NoError>?, (ListViewItemApply) -> Void)) -> Void) {
@@ -138,9 +140,6 @@ public class ItemListCallListItemNode: ListViewItemNode {
         return false
     }
     
-    private let disposalBag = DisposableSet()
-    private var time: Int32 = 0
-    
     public init() {
         self.backgroundNode = ASDisplayNode()
         self.backgroundNode.isLayerBacked = true
@@ -164,13 +163,6 @@ public class ItemListCallListItemNode: ListViewItemNode {
         
         self.addSubnode(self.titleNode)
         self.addSubnode(self.accessibilityArea)
-        
-        disposalBag.add(
-            (DateFetcher.fetchDate()
-            |> deliverOnMainQueue)
-            .start(next: { [weak self] time in
-                self?.time = time
-            }))
     }
     
     public func asyncLayout() -> (_ item: ItemListCallListItem, _ params: ListViewItemLayoutParams, _ insets: ItemListNeighbors) -> (ListViewItemNodeLayout, () -> Void) {
@@ -242,9 +234,7 @@ public class ItemListCallListItemNode: ListViewItemNode {
                 insets = UIEdgeInsets()
             }
             
-//            let earliestMessage = item.messages.sorted(by: {$0.timestamp < $1.timestamp}).first!
-            
-            let titleText = stringForDate(timestamp: self?.time ?? 0, strings: item.presentationData.strings)
+            let titleText = stringForDate(timestamp: item.currentDate, strings: item.presentationData.strings)
             let (titleLayout, titleApply) = makeTitleLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: titleText, font: titleFont, textColor: item.presentationData.theme.list.itemPrimaryTextColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: params.width - params.rightInset - 20.0 - leftInset, height: CGFloat.greatestFiniteMagnitude), alignment: .natural, cutout: nil, insets: UIEdgeInsets()))
             
             contentHeight += titleLayout.size.height + 18.0
